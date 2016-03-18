@@ -1,0 +1,52 @@
+version: "2"
+services:
+
+  n1:
+    build: build/datomic-peer
+    restart: unless-stopped
+    entrypoint: /root/wait-for-init.sh
+    ports:
+      - "8001"
+
+  n2:
+    build: build/datomic-peer
+    restart: unless-stopped
+    entrypoint: /root/wait-for-init.sh
+    ports:
+      - "8001"
+
+  n3:
+    build: build/datomic-transactor
+    restart: unless-stopped
+    entrypoint: /root/init.sh n3
+    expose:
+      - "4334"
+
+  n4:
+    build: build/datomic-transactor
+    restart: unless-stopped
+    entrypoint: /root/wait-for-init.sh n4
+    expose:
+      - "4334"
+
+  n5:
+    build: build/datomic-console
+    restart: unless-stopped
+    entrypoint: /root/wait-for-init.sh
+    ports:
+      - "8080"
+
+  postgres:
+    image: postgres:9.3
+    volumes_from:
+      - postgresdata
+    environment:
+      - LC_ALL=C.UTF-8
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+
+  postgresdata:
+    image: postgres:9.3
+    entrypoint: tail -f /dev/null
+    volumes:
+      - /var/lib/postgresql/data
