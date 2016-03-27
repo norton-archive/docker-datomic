@@ -20,7 +20,7 @@ realclean: clean
 	@docker rm -v $(shell docker ps -a -q -f status=exited) 2>/dev/null || true
 	@docker rmi $(shell docker images -q) 2>/dev/null || true
 	@docker rm $(shell docker ps -a -q) 2>/dev/null || true
-	@rm -f xpriv/datomic-pro-$(DATOMIC_VERSION).zip
+	@rm -f priv/datomic-pro-$(DATOMIC_VERSION).zip
 	@rm -f build/datomic-base/datomic-pro-$(DATOMIC_VERSION).zip
 	@rm -f build/datomic-transactor/.license-key
 
