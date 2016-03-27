@@ -1,52 +1,92 @@
 version: "2"
 services:
 
+  tester:
+    build: build/datomic-tester
+    depends_on:
+      - datomic-base
+      - postgres
+      - n1
+      - n2
+      - n3
+      - n4
+      - n5
+      - n6
+    entrypoint: /root/wait-for-init-tester.sh
+
   n1:
     build: build/datomic-peer
+    image: datomic_peer
+    depends_on:
+      - datomic-base
+    entrypoint: /root/wait-for-init-peer.sh
     restart: unless-stopped
-    entrypoint: /root/wait-for-init.sh
     ports:
       - "8001"
 
   n2:
-    build: build/datomic-peer
+    image: datomic_peer
+    depends_on:
+      - n1
+    entrypoint: /root/wait-for-init-peer.sh
     restart: unless-stopped
-    entrypoint: /root/wait-for-init.sh
     ports:
       - "8001"
 
   n3:
-    build: build/datomic-transactor
+    image: datomic_peer
+    depends_on:
+      - n1
+    entrypoint: /root/wait-for-init-peer.sh
     restart: unless-stopped
-    entrypoint: /root/init.sh n3
-    expose:
-      - "4334"
+    ports:
+      - "8001"
 
   n4:
     build: build/datomic-transactor
+    image: datomic_transactor
+    depends_on:
+      - datomic-base
+    entrypoint: /root/init-transactor.sh n4
     restart: unless-stopped
-    entrypoint: /root/wait-for-init.sh n4
     expose:
       - "4334"
 
   n5:
-    build: build/datomic-console
+    image: datomic_transactor
+    depends_on:
+      - n4
+    entrypoint: /root/wait-for-init-transactor.sh n5
     restart: unless-stopped
-    entrypoint: /root/wait-for-init.sh
+    expose:
+      - "4334"
+
+  n6:
+    build: build/datomic-console
+    image: datomic_console
+    depends_on:
+      - datomic-base
+    entrypoint: /root/wait-for-init-console.sh
+    restart: unless-stopped
     ports:
       - "8080"
 
   postgres:
     image: postgres:9.3
     volumes_from:
-      - postgresdata
+      - postgres-data
     environment:
       - LC_ALL=C.UTF-8
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
 
-  postgresdata:
+  postgres-data:
     image: postgres:9.3
     entrypoint: tail -f /dev/null
     volumes:
       - /var/lib/postgresql/data
+
+  datomic-base:
+    build: build/datomic-base
+    image: datomic_base
+    entrypoint: tail -f /dev/null

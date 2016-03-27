@@ -2,6 +2,7 @@
 
 set -e
 
+dirname=`dirname $(realpath $0)`
 host="postgres"
 user="postgres"
 pass="postgres"
@@ -16,5 +17,4 @@ PGPASSWORD="$pass" psql -f bin/sql/postgres-db.sql -h "$host" -U "$user"
 PGPASSWORD="$pass" psql -f bin/sql/postgres-table.sql -h "$host" -U "$user" -d datomic
 PGPASSWORD="$pass" psql -f bin/sql/postgres-user.sql -h "$host" -U "$user" -d datomic
 
-dirname=`dirname $(realpath $0)`
-exec $dirname/wait-for-init.sh $@
+exec $dirname/wait-for-init-transactor.sh $@
