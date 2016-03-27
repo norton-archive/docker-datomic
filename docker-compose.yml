@@ -3,8 +3,11 @@ services:
 
   tester:
     build: build/datomic-tester
+    image: datomic_tester
     depends_on:
       - datomic-base
+    volumes_from:
+      - tester-data
     links:
       - n1
       - n2
@@ -13,7 +16,12 @@ services:
       - n5
       - n6
       - n7:postgres
-    entrypoint: /root/wait-for-init-tester.sh
+
+  tester-data:
+    image: datomic_tester
+    entrypoint: tail -f /dev/null
+    volumes:
+      - ./var/tester-data:/usr/src/app/store
 
   n1:
     build: build/datomic-peer

@@ -1,7 +1,11 @@
 (ns jepsen.datomic-test
   (:require [clojure.test :refer :all]
-            [jepsen.datomic :refer :all]))
+            [jepsen.core :as jepsen]
+            [jepsen.datomic :as da]))
 
-(deftest a-test
-  (testing "FIXME, I fail."
-    (is (= 0 1))))
+(def datomic-version
+  (or (System/getenv "DATOMIC_VERSION")
+      "0.9.5350"))
+
+(deftest da-test
+  (is (:valid? (:results (jepsen/run! (da/da-test datomic-version))))))

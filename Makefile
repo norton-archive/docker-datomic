@@ -7,7 +7,7 @@ all: start
 build: build/datomic-base/datomic-pro-$(DATOMIC_VERSION).zip build/datomic-transactor/.license-key
 	docker-compose build
 
-start: build
+start: build var/tester-data
 	docker-compose up -d
 
 stop:
@@ -23,6 +23,7 @@ realclean: clean
 	@rm -f priv/datomic-pro-$(DATOMIC_VERSION).zip
 	@rm -f build/datomic-base/datomic-pro-$(DATOMIC_VERSION).zip
 	@rm -f build/datomic-transactor/.license-key
+	@rm -rf var/tester-data
 
 priv/datomic-pro-$(DATOMIC_VERSION).zip: priv/.credentials
 	curl -u $(shell cat priv/.credentials) -SL https://my.datomic.com/repo/com/datomic/datomic-pro/$(DATOMIC_VERSION)/datomic-pro-$(DATOMIC_VERSION).zip -o $@
@@ -32,3 +33,6 @@ build/datomic-base/datomic-pro-$(DATOMIC_VERSION).zip: priv/datomic-pro-$(DATOMI
 
 build/datomic-transactor/.license-key: priv/.license-key
 	cp -f priv/.license-key $@
+
+var/tester-data:
+	mkdir -p $@

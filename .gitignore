@@ -1,3 +1,4 @@
-priv
-build/datomic-*/datomic-pro-*.zip
+build/datomic-base/datomic-pro-*.zip
 build/datomic-transactor/.license-key
+priv
+var

@@ -1,6 +1,7 @@
-(ns jepsen.datomic)
+(ns jepsen.datomic
+  (:require [jepsen.tests :as tests]))
 
-(defn foo
-  "I don't do a whole lot."
-  [x]
-  (println x "Hello, World!"))
+(defn da-test
+  [version]
+  (assoc tests/noop-test
+         :nodes ["n1" "n2" "n3"]))
