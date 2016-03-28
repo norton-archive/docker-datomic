@@ -21,80 +21,81 @@ services:
     image: datomic_tester
     entrypoint: tail -f /dev/null
     volumes:
-      - ./var/tester-data:/usr/src/app/store
+      - /usr/src/app/store
 
   n1:
-    build: build/datomic-peer
-    image: datomic_peer
+    image: datomic_base
     depends_on:
       - datomic-base
     links:
-      - n4
-      - n5
       - n7:postgres
     entrypoint: /root/wait-for-init-peer.sh
     restart: unless-stopped
     ports:
+      - "22"
       - "8001"
 
   n2:
-    image: datomic_peer
+    image: datomic_base
+    depends_on:
+      - datomic-base
     links:
-      - n1
-      - n4
-      - n5
       - n7:postgres
     entrypoint: /root/wait-for-init-peer.sh
     restart: unless-stopped
     ports:
+      - "22"
       - "8001"
 
   n3:
-    image: datomic_peer
+    image: datomic_base
+    depends_on:
+      - datomic-base
     links:
-      - n1
-      - n4
-      - n5
       - n7:postgres
     entrypoint: /root/wait-for-init-peer.sh
     restart: unless-stopped
     ports:
+      - "22"
       - "8001"
 
   n4:
-    build: build/datomic-transactor
-    image: datomic_transactor
+    image: datomic_base
     depends_on:
       - datomic-base
     links:
       - n7:postgres
-    entrypoint: /root/init-transactor.sh n4
+    entrypoint: /root/wait-for-init-transactor.sh n4
     restart: unless-stopped
-    expose:
+    ports:
+      - "22"
       - "4334"
+      - "8001"
 
   n5:
-    image: datomic_transactor
+    image: datomic_base
+    depends_on:
+      - datomic-base
     links:
-      - n4
       - n7:postgres
     entrypoint: /root/wait-for-init-transactor.sh n5
     restart: unless-stopped
-    expose:
+    ports:
+      - "22"
       - "4334"
+      - "8001"
 
   n6:
-    build: build/datomic-console
-    image: datomic_console
+    image: datomic_base
     depends_on:
       - datomic-base
     links:
-      - n4
-      - n5
       - n7:postgres
     entrypoint: /root/wait-for-init-console.sh
     restart: unless-stopped
     ports:
+      - "22"
+      - "8001"
       - "8080"
 
   n7:

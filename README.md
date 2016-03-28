@@ -3,13 +3,10 @@ Docker musings for a Datomic installation and jepsen test automation.
 
 ## Quickstart
 
-1. Execute `make`
-2. Execute `docker-compose logs tester` to view the output of lein test.
-
-Test results are stored under the var/tester-data directory.
-
-Execute `docker-compose run tester lein test` to repeat the test.
-
+```
+make
+make test
+```
 See [Makefile](./Makefile) for details.
 
 ## Prerequisites
@@ -22,3 +19,7 @@ See [Makefile](./Makefile) for details.
 ## Resources
 - http://www.datomic.com
 - https://github.com/aphyr/jepsen
+
+## ToDo
+- Add checksums for curl downloads
+- Figure out persistent storage for test logs (i.e. Test results are stored under the var/tester-data directory.).

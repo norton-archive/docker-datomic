@@ -7,7 +7,7 @@ host="postgres"
 user="postgres"
 pass="postgres"
 
-until PGPASSWORD="$pass" psql -h "$host" -U "$user" -c '\l'; do
+until PGPASSWORD="$pass" psql -h "$host" -U "$user" -c 'SELECT NULL;'; do
     >&2 echo "Postgres is unavailable - sleeping"
     sleep 0.1
 done

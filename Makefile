@@ -1,14 +1,17 @@
-.PHONY: all build start stop clean realclean
+.PHONY: all build start test stop clean realclean
 
 DATOMIC_VERSION = 0.9.5350
 
 all: start
 
-build: build/datomic-base/datomic-pro-$(DATOMIC_VERSION).zip build/datomic-transactor/.license-key
+build: build/datomic-base/datomic-pro-$(DATOMIC_VERSION).zip build/datomic-base/.license-key
 	docker-compose build
 
 start: build var/tester-data
 	docker-compose up -d
+
+test:
+	docker-compose run tester lein test
 
 stop:
 	docker-compose stop
@@ -22,7 +25,7 @@ realclean: clean
 	@docker rm $(shell docker ps -a -q) 2>/dev/null || true
 	@rm -f priv/datomic-pro-$(DATOMIC_VERSION).zip
 	@rm -f build/datomic-base/datomic-pro-$(DATOMIC_VERSION).zip
-	@rm -f build/datomic-transactor/.license-key
+	@rm -f build/datomic-base/.license-key
 	@rm -rf var/tester-data
 
 priv/datomic-pro-$(DATOMIC_VERSION).zip: priv/.credentials
@@ -31,7 +34,7 @@ priv/datomic-pro-$(DATOMIC_VERSION).zip: priv/.credentials
 build/datomic-base/datomic-pro-$(DATOMIC_VERSION).zip: priv/datomic-pro-$(DATOMIC_VERSION).zip
 	cp -f priv/datomic-pro-$(DATOMIC_VERSION).zip $@
 
-build/datomic-transactor/.license-key: priv/.license-key
+build/datomic-base/.license-key: priv/.license-key
 	cp -f priv/.license-key $@
 
 var/tester-data:
