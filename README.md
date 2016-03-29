@@ -42,7 +42,7 @@ $ make
 - Add 'dev' docker machine to your environment.
 
 ```
-eval "$(docker-machine env dev)"
+$ eval "$(docker-machine env dev)"
 ```
 
 ## ToDo
