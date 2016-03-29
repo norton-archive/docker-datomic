@@ -1,6 +1,8 @@
 FROM datomic_base
 
 # Setup Datomic
+RUN mkdir -p /root/.m2
+COPY ./.m2 /root/.m2
 RUN mkdir -p /usr/src/app/store
 WORKDIR /usr/src/app
 COPY ./jepsen.datomic/project.clj /usr/src/app/

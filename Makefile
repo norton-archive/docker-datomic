@@ -1,10 +1,10 @@
-.PHONY: all build start test stop clean realclean
+.PHONY: all build start test stop m2-cache clean realclean
 
 DATOMIC_VERSION = 0.9.5350
 
 all: start
 
-build: build/datomic-base/datomic-pro-$(DATOMIC_VERSION).zip build/datomic-base/.license-key
+build: build/datomic-base/datomic-pro-$(DATOMIC_VERSION).zip build/datomic-base/.license-key build/datomic-tester/.m2
 	docker-compose build
 
 start: build var/tester-data
@@ -16,6 +16,11 @@ test:
 stop:
 	docker-compose stop
 
+m2-cache:
+	rm -rf build/datomic-tester/.m2
+	(cd build/datomic-tester/jepsen.datomic && lein deps && lein install)
+	cp -r ~/.m2 build/datomic-tester
+
 clean: stop
 	-docker-compose down
 
@@ -26,6 +31,7 @@ realclean: clean
 	@rm -f priv/datomic-pro-$(DATOMIC_VERSION).zip
 	@rm -f build/datomic-base/datomic-pro-$(DATOMIC_VERSION).zip
 	@rm -f build/datomic-base/.license-key
+	@rm -rf build/datomic-base/.m2
 	@rm -rf var/tester-data
 
 priv/datomic-pro-$(DATOMIC_VERSION).zip: priv/.credentials
@@ -36,6 +42,9 @@ build/datomic-base/datomic-pro-$(DATOMIC_VERSION).zip: priv/datomic-pro-$(DATOMI
 
 build/datomic-base/.license-key: priv/.license-key
 	cp -f priv/.license-key $@
+
+build/datomic-tester/.m2:
+	mkdir -p $@
 
 var/tester-data:
 	mkdir -p $@

@@ -1,4 +1,5 @@
 build/datomic-base/.license-key
 build/datomic-base/datomic-pro-*.zip
+build/datomic-tester/.m2
 priv
 var
