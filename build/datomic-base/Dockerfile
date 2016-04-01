@@ -52,19 +52,5 @@ EXPOSE 4334
 EXPOSE 8001
 EXPOSE 8080
 
-# Copy helper utilities
-COPY ./wait-for-init-base.sh /root
-COPY ./wait-for-init-console.sh /root
-COPY ./wait-for-init-peer.sh /root
-COPY ./wait-for-init-transactor.sh /root
-
-COPY ./daemon-console.sh /root
-COPY ./daemon-transactor.sh /root
-
-COPY ./init-tester.sh /root
-COPY ./drop-tester.sh /root
-COPY ./drop-init-tester.sh /root
-COPY ./wait-for-init-tester.sh /root
-
 # Change work directory
 WORKDIR $DATOMIC_HOME

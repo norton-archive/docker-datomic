@@ -2,6 +2,7 @@
 
 (def uri "datomic:sql://datomic-tester?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic")
 
+(d/delete-database uri)
 (d/create-database uri)
 
 (def conn (d/connect uri))

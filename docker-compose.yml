@@ -2,10 +2,9 @@ version: "2"
 services:
 
   tester:
-    build: build/datomic-tester
     image: datomic_tester
     depends_on:
-      - datomic-base
+      - datomic-tester
     volumes_from:
       - tester-data
     links:
@@ -24,48 +23,48 @@ services:
       - /usr/src/app/store
 
   n1:
-    image: datomic_base
+    image: datomic_tester
     depends_on:
-      - datomic-base
+      - datomic-tester
     links:
       - n7:postgres
-    entrypoint: /root/wait-for-init-peer.sh
+    entrypoint: /usr/src/app/scripts/wait-for-init-peer.sh
     restart: unless-stopped
     ports:
       - "22"
       - "8001"
 
   # n2:
-  #   image: datomic_base
+  #   image: datomic_tester
   #   depends_on:
-  #     - datomic-base
+  #     - datomic-tester
   #   links:
   #     - n7:postgres
-  #   entrypoint: /root/wait-for-init-peer.sh
+  #   entrypoint: /usr/src/app/scripts/wait-for-init-peer.sh
   #   restart: unless-stopped
   #   ports:
   #     - "22"
   #     - "8001"
 
   # n3:
-  #   image: datomic_base
+  #   image: datomic_tester
   #   depends_on:
-  #     - datomic-base
+  #     - datomic-tester
   #   links:
   #     - n7:postgres
-  #   entrypoint: /root/wait-for-init-peer.sh
+  #   entrypoint: /usr/src/app/scripts/wait-for-init-peer.sh
   #   restart: unless-stopped
   #   ports:
   #     - "22"
   #     - "8001"
 
   n4:
-    image: datomic_base
+    image: datomic_tester
     depends_on:
-      - datomic-base
+      - datomic-tester
     links:
       - n7:postgres
-    entrypoint: /root/wait-for-init-transactor.sh n4
+    entrypoint: /usr/src/app/scripts/wait-for-init-transactor.sh n4
     restart: unless-stopped
     ports:
       - "22"
@@ -73,12 +72,12 @@ services:
       - "8001"
 
   # n5:
-  #   image: datomic_base
+  #   image: datomic_tester
   #   depends_on:
-  #     - datomic-base
+  #     - datomic-tester
   #   links:
   #     - n7:postgres
-  #   entrypoint: /root/wait-for-init-transactor.sh n5
+  #   entrypoint: /usr/src/app/scripts/wait-for-init-transactor.sh n5
   #   restart: unless-stopped
   #   ports:
   #     - "22"
@@ -86,12 +85,12 @@ services:
   #     - "8001"
 
   # n6:
-  #   image: datomic_base
+  #   image: datomic_tester
   #   depends_on:
-  #     - datomic-base
+  #     - datomic-tester
   #   links:
   #     - n7:postgres
-  #   entrypoint: /root/wait-for-init-console.sh
+  #   entrypoint: /usr/src/app/scripts/wait-for-init-console.sh
   #   restart: unless-stopped
   #   ports:
   #     - "22"
@@ -112,6 +111,12 @@ services:
     entrypoint: tail -f /dev/null
     volumes:
       - /var/lib/postgresql/data
+
+  datomic-tester:
+    build: build/datomic-tester
+    image: datomic_tester
+    depends_on:
+      - datomic-base
 
   datomic-base:
     build: build/datomic-base
