@@ -30,7 +30,7 @@ See [Makefile](./Makefile) for details.
 ```
 $ brew cask install virtualbox
 $ brew install docker docker-compose docker-machine
-$ brew install maven
+$ brew install leiningen maven
 ```
 
 - Create your own 'dev' docker machine.

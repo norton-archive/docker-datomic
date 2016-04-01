@@ -1,5 +1,6 @@
 (ns jepsen.datomic
   (:require [clojure.tools.logging :refer :all]
+            [datomic.api :only [q db] :as d]
             [jepsen
              [db :as db]
              [tests :as tests]
@@ -52,7 +53,18 @@
     db/Primary
     (setup-primary! [_ test node]
       (info node "db setup primary" version)
-      (c/exec "/usr/local/bin/lein" "exec" "-p" "/usr/src/app/scripts/drop-init-schema.clj"))))
+      (let [uri "datomic:sql://datomic-tester?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic"
+            delete (d/delete-database uri)
+            create (d/create-database uri)
+            conn (d/connect uri)
+            schema-tx [{:db/id #db/id[:db.part/db]
+                        :db/ident :datomic-tester/register
+                        :db/valueType :db.type/long
+                        :db/cardinality :db.cardinality/one
+                        :db/doc "A register for datomic tester"
+                        :db.install/_attribute :db.part/db}]]
+        ;; submit schema transaction
+        @(d/transact conn schema-tx)))))
 
 (def os
   (reify os/OS
