@@ -4,6 +4,7 @@ Docker musings for a Datomic installation and jepsen test automation.
 ## Quickstart
 
 ```
+$ make m2-cache
 $ make
 $ make test
 ```
@@ -24,15 +25,13 @@ See [Makefile](./Makefile) for details.
 ## Prerequisites (Mac OS X)
 
 - Install and setup [homebrew](http://brew.sh).
-- Install virtualbox, docker, docker-compose, and docker-machine.
+- Install virtualbox, docker, docker-compose, docker-machine, and maven.
 
 ```
 $ brew cask install virtualbox
 $ brew install docker docker-compose docker-machine
 $ brew install maven
 ```
-
-NOTE: `brew install maven` is required only if you use the m2-cache Makefile target.
 
 - Create your own 'dev' docker machine.
 
@@ -41,6 +40,8 @@ $ git clone https://github.com/norton/docker-machine.git
 $ cd docker-machine
 $ make
 ```
+
+NOTE: This test probably needs at least 4-5 GB of physical memory and at least 2 cpus.
 
 - Add 'dev' docker machine to your environment.
 
