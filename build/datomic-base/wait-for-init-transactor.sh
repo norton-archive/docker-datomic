@@ -13,4 +13,4 @@ $dirname/wait-for-init-base.sh
 $dirname/daemon-transactor.sh &
 
 >&2 echo "Executing peer"
-bin/rest -p 8001 postgres 'datomic:sql://datomic?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic'
+bin/rest -p 8001 postgres 'datomic:sql://datomic-tester?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic'

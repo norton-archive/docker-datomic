@@ -10,11 +10,11 @@ services:
       - tester-data
     links:
       - n1
-      - n2
-      - n3
+      #- n2
+      #- n3
       - n4
-      - n5
-      - n6
+      #- n5
+      #- n6
       - n7:postgres
 
   tester-data:
@@ -35,29 +35,29 @@ services:
       - "22"
       - "8001"
 
-  n2:
-    image: datomic_base
-    depends_on:
-      - datomic-base
-    links:
-      - n7:postgres
-    entrypoint: /root/wait-for-init-peer.sh
-    restart: unless-stopped
-    ports:
-      - "22"
-      - "8001"
+  # n2:
+  #   image: datomic_base
+  #   depends_on:
+  #     - datomic-base
+  #   links:
+  #     - n7:postgres
+  #   entrypoint: /root/wait-for-init-peer.sh
+  #   restart: unless-stopped
+  #   ports:
+  #     - "22"
+  #     - "8001"
 
-  n3:
-    image: datomic_base
-    depends_on:
-      - datomic-base
-    links:
-      - n7:postgres
-    entrypoint: /root/wait-for-init-peer.sh
-    restart: unless-stopped
-    ports:
-      - "22"
-      - "8001"
+  # n3:
+  #   image: datomic_base
+  #   depends_on:
+  #     - datomic-base
+  #   links:
+  #     - n7:postgres
+  #   entrypoint: /root/wait-for-init-peer.sh
+  #   restart: unless-stopped
+  #   ports:
+  #     - "22"
+  #     - "8001"
 
   n4:
     image: datomic_base
@@ -72,31 +72,31 @@ services:
       - "4334"
       - "8001"
 
-  n5:
-    image: datomic_base
-    depends_on:
-      - datomic-base
-    links:
-      - n7:postgres
-    entrypoint: /root/wait-for-init-transactor.sh n5
-    restart: unless-stopped
-    ports:
-      - "22"
-      - "4334"
-      - "8001"
+  # n5:
+  #   image: datomic_base
+  #   depends_on:
+  #     - datomic-base
+  #   links:
+  #     - n7:postgres
+  #   entrypoint: /root/wait-for-init-transactor.sh n5
+  #   restart: unless-stopped
+  #   ports:
+  #     - "22"
+  #     - "4334"
+  #     - "8001"
 
-  n6:
-    image: datomic_base
-    depends_on:
-      - datomic-base
-    links:
-      - n7:postgres
-    entrypoint: /root/wait-for-init-console.sh
-    restart: unless-stopped
-    ports:
-      - "22"
-      - "8001"
-      - "8080"
+  # n6:
+  #   image: datomic_base
+  #   depends_on:
+  #     - datomic-base
+  #   links:
+  #     - n7:postgres
+  #   entrypoint: /root/wait-for-init-console.sh
+  #   restart: unless-stopped
+  #   ports:
+  #     - "22"
+  #     - "8001"
+  #     - "8080"
 
   n7:
     image: postgres:9.3

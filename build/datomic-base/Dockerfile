@@ -39,7 +39,7 @@ ENV DATOMIC_VERSION 0.9.5350
 ENV DATOMIC_HOME /opt/datomic-pro
 
 COPY datomic-pro-$DATOMIC_VERSION.zip /tmp/datomic.zip
-RUN unzip /tmp/datomic.zip -d /opt \
+RUN unzip -qq /tmp/datomic.zip -d /opt \
  && rm -f /tmp/datomic.zip \
  && mv /opt/datomic-pro-$DATOMIC_VERSION $DATOMIC_HOME
 

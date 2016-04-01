@@ -16,8 +16,9 @@ test:
 stop:
 	docker-compose stop
 
-m2-cache:
-	rm -rf build/datomic-tester/.m2
+m2-cache: priv/datomic-pro-$(DATOMIC_VERSION).zip
+	rm -rf build/datomic-tester/.m2 priv/datomic-pro-$(DATOMIC_VERSION)
+	(unzip -qq priv/datomic-pro-$(DATOMIC_VERSION).zip -d priv && cd priv/datomic-pro-$(DATOMIC_VERSION) && ./bin/maven-install)
 	(cd build/datomic-tester/jepsen.datomic && lein deps && lein install)
 	cp -r ~/.m2 build/datomic-tester
 

@@ -29,7 +29,10 @@ See [Makefile](./Makefile) for details.
 ```
 $ brew cask install virtualbox
 $ brew install docker docker-compose docker-machine
+$ brew install maven
 ```
+
+NOTE: `brew install maven` is required only if you use the m2-cache Makefile target.
 
 - Create your own 'dev' docker machine.
 

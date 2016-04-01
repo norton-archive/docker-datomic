@@ -39,6 +39,6 @@
 (defn da-test
   [version]
   (assoc tests/noop-test
-         :nodes ["n1" "n2" "n3"]
+         :nodes ["n1"] # TODO n1-n3
          :os os
          :db (db version)))
