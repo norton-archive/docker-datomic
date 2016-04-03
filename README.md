@@ -52,8 +52,7 @@ $ eval "$(docker-machine env dev)"
 ## ToDo
 - Add checksums for curl downloads.
 - Figure out persistent storage for test logs (i.e. Test results are stored under the var/tester-data directory.) in 'docker-compose.yml7.
-- Implement connections to jepsen.datomic test.
-- Implement read, write, and cas operations to jepsen.datomic test.
+- Test read, write, and cas operations to jepsen.datomic test.
 - Implement model checker to jepsen.datomic test.
 - Implement performance checker to jepsen.datomic test.
 - Implement a "chaos monkey" approach for killing peer containers to jepsen.datomic test.

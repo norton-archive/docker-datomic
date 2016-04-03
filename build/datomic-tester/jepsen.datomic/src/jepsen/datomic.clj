@@ -1,15 +1,93 @@
 (ns jepsen.datomic
-  (:require [clojure.tools.logging :refer :all]
-            [datomic.api :only [q db] :as d]
-            [jepsen
-             [db :as db]
-             [tests :as tests]
-             [client :as client]
-             [control :as c]
-             [util :refer [timeout meh]]]
-            [jepsen.control.net :as net]
-            [jepsen.os :as os]
-            [jepsen.os.debian :as debian]))
+(:require [clojure.tools.logging :refer :all]
+          [datomic.api :only [q db] :as d]
+          [clj-http.client :as http]
+          [jepsen
+           [db :as db]
+           [tests :as tests]
+           [checker :as checker]
+           [client :as client]
+           [control :as c]
+           [generator :as gen]
+           [util :refer [timeout meh]]]
+          [jepsen.control.net :as net]
+          [jepsen.os :as os]
+          [jepsen.os.debian :as debian]))
+
+(defn da-setup-schema []
+(let [uri "datomic:sql://tester?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic"
+      delete (d/delete-database uri)
+      create (d/create-database uri)
+      conn (d/connect uri)
+      schema-tx [{:db/id #db/id[:db.part/db]
+                  :db/ident :tester/register
+                  :db/valueType :db.type/long
+                  :db/cardinality :db.cardinality/one
+                  :db/doc "A register for datomic tester"
+                  :db.install/_attribute :db.part/db}]]
+  ;; submit schema transaction
+  @(d/transact conn schema-tx)
+  @(d/transact conn [[:db/add 1 :tester/register 0]])))
+
+(defn da-r [node]
+  (let [url (str "http://" (name node) ":8001/data/postgres/tester/-/entity?e=1")
+        req {:headers {"Accept" "application/edn"}
+             :as :clojure
+             :throw-exceptions false}
+        res (http/get url req)]
+    res))
+
+(defn da-w! [node value]
+  (let [url (str "http://" (name node) ":8001/data/postgres/tester/")
+        req {:headers {"Accept" "application/edn"}
+             :content-type :application/edn
+             :body (prn-str {:tx-data [[:db/add 1 :tester/register value]]})
+             :as :clojure
+             :throw-exceptions false}
+        res (http/post url req)]
+    res))
+
+(defn da-cas! [node value new-value]
+  (let [url (str "http://" (name node) ":8001/data/postgres/tester/")
+        req {:headers {"Accept" "application/edn"}
+             :content-type :application/edn
+             :body (prn-str {:tx-data [[:db.fn/cas 1 :tester/register value new-value]]})
+             :as :clojure
+             :throw-exceptions false}
+        res (http/post url req)]
+    res))
+
+(defn r   [_ _] {:type :invoke, :f :read, :value nil})
+(defn w   [_ _] {:type :invoke, :f :write, :value (rand-int 5)})
+(defn cas [_ _] {:type :invoke, :f :cas, :value [(rand-int 5) (rand-int 5)]})
+
+(defn client
+  "A client for a single compare-and-set register"
+  [conn]
+  (reify client/Client
+    (setup! [_ test node]
+      (client node)) ; NOTE: node is treated as the connection
+
+    (invoke! [this test op]
+      (timeout 15000 (assoc op :type :info, :error :timeout)
+               (case (:f op)
+                 :read (let [res (da-r conn)]
+                         (if (= 200 (:status res))
+                           (assoc op :type :ok :value (:tester/register (:body res)))
+                           (assoc op :type :fail)))
+
+                 :write (let [res (da-w! conn (:value op))]
+                          (if (= 201 (:status res))
+                            (assoc op :type :ok)
+                            (assoc op :type :fail)))
+
+                 :cas (let [[value new-value] (:value op)
+                            res (da-cas! conn value new-value)]
+                        (if (= 201 (:status res))
+                          (assoc op :type :ok)
+                          (assoc op :type :fail))))))
+
+    (teardown! [_ test])))
 
 (defn da-node-ids
   "Returns a map of node names to node ids."
@@ -23,21 +101,6 @@
   "Given a test and a node name from that test, returns the ID for that node."
   [test node]
   ((da-node-ids test) node))
-
-(defn r   [_ _] {:type :invoke, :f :read, :value nil})
-(defn w   [_ _] {:type :invoke, :f :write, :value (rand-int 5)})
-(defn cas [_ _] {:type :invoke, :f :cas, :value [(rand-int 5) (rand-int 5)]})
-
-(defn client
-  "A client for a single compare-and-set register"
-  []
-  (reify client/Client
-    (setup! [_ test node]
-      (client))
-
-    (invoke! [this test op])
-
-    (teardown! [_ test])))
 
 (defn db
   "Datomic DB for a particular version."
@@ -53,18 +116,7 @@
     db/Primary
     (setup-primary! [_ test node]
       (info node "db setup primary" version)
-      (let [uri "datomic:sql://datomic-tester?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic"
-            delete (d/delete-database uri)
-            create (d/create-database uri)
-            conn (d/connect uri)
-            schema-tx [{:db/id #db/id[:db.part/db]
-                        :db/ident :datomic-tester/register
-                        :db/valueType :db.type/long
-                        :db/cardinality :db.cardinality/one
-                        :db/doc "A register for datomic tester"
-                        :db.install/_attribute :db.part/db}]]
-        ;; submit schema transaction
-        @(d/transact conn schema-tx)))))
+      (da-setup-schema))))
 
 (def os
   (reify os/OS
@@ -84,4 +136,9 @@
          :nodes ["n1"] ; TODO n1-n3
          :os os
          :db (db version)
-         :client (client)))
+         :client (client nil)
+         :generator (->> (gen/mix [r w])
+                         (gen/stagger 1)
+                         (gen/clients)
+                         (gen/time-limit 15))
+         :checker checker/linearizable))

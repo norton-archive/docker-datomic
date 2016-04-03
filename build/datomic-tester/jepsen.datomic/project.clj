@@ -11,4 +11,6 @@
                   :exclusions [org.slf4j/slf4j-nop org.slf4j/log4j-over-slf4j]]
                  [org.slf4j/slf4j-log4j12 "1.6.4"]
                  [org.postgresql/postgresql "9.3-1102-jdbc41"]
+                 [org.apache.httpcomponents/httpclient "4.3.5"]
+                 [clj-http "2.1.0"]
                  [jepsen "0.0.9"]])
