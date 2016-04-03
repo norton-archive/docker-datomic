@@ -1,33 +1,39 @@
 (ns jepsen.datomic
-(:require [clojure.tools.logging :refer :all]
-          [datomic.api :only [q db] :as d]
-          [clj-http.client :as http]
-          [jepsen
-           [db :as db]
-           [tests :as tests]
-           [checker :as checker]
-           [client :as client]
-           [control :as c]
-           [generator :as gen]
-           [util :refer [timeout meh]]]
-          [jepsen.control.net :as net]
-          [jepsen.os :as os]
-          [jepsen.os.debian :as debian]))
+  (:require [clojure.tools.logging :refer :all]
+            [datomic.api :only [q db] :as d]
+            [clj-http.client :as http]
+            [jepsen
+             [db :as db]
+             [tests :as tests]
+             [checker :as checker]
+             [client :as client]
+             [control :as c]
+             [generator :as gen]
+             [util :refer [timeout meh]]]
+            [jepsen.control.net :as net]
+            [jepsen.os :as os]
+            [jepsen.os.debian :as debian]))
 
 (defn da-setup-schema []
-(let [uri "datomic:sql://tester?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic"
-      delete (d/delete-database uri)
-      create (d/create-database uri)
-      conn (d/connect uri)
-      schema-tx [{:db/id #db/id[:db.part/db]
-                  :db/ident :tester/register
-                  :db/valueType :db.type/long
-                  :db/cardinality :db.cardinality/one
-                  :db/doc "A register for datomic tester"
-                  :db.install/_attribute :db.part/db}]]
-  ;; submit schema transaction
-  @(d/transact conn schema-tx)
-  @(d/transact conn [[:db/add 1 :tester/register 0]])))
+  (let [uri "datomic:sql://tester?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic"
+        schema-tx [{:db/id #db/id[:db.part/db]
+                    :db/ident :tester/register
+                    :db/valueType :db.type/long
+                    :db/cardinality :db.cardinality/one
+                    :db/doc "A register for datomic tester"
+                    :db.install/_attribute :db.part/db}]
+        delete (d/delete-database uri)
+        create (d/create-database uri)
+        conn (d/connect uri)]
+    (try
+      (do
+        ;; initialize schema
+        @(d/transact conn schema-tx)
+        ;; initialize register
+        @(d/transact conn [[:db/add 1 :tester/register 0]])
+        true)
+      (finally ; release connection
+        (d/release conn)))))
 
 (defn da-r [node]
   (let [url (str "http://" (name node) ":8001/data/postgres/tester/-/entity?e=1")
@@ -107,8 +113,8 @@
   [version]
   (reify db/DB
     (setup! [_ test node]
-       (info node "db setup" version)
-       (info node "id is" (da-node-id test node)))
+      (info node "db setup" version)
+      (info node "id is" (da-node-id test node)))
 
     (teardown! [_ test node]
       (info node "db teardown"))
@@ -116,7 +122,13 @@
     db/Primary
     (setup-primary! [_ test node]
       (info node "db setup primary" version)
-      (da-setup-schema))))
+      (while
+          (try
+            (not (da-setup-schema))
+            (catch Exception e
+              (info node "db setup primary failed - retrying: " (.getMessage e))
+              (Thread/sleep 500)
+              true))))))
 
 (def os
   (reify os/OS
