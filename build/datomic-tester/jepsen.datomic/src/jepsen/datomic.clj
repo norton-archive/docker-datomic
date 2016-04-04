@@ -4,15 +4,14 @@
             [clj-http.client :as http]
             [jepsen
              [db :as db]
-             [tests :as tests]
              [checker :as checker]
              [client :as client]
              [control :as c]
              [generator :as gen]
-             [util :refer [timeout meh]]]
-            [jepsen.control.net :as net]
-            [jepsen.os :as os]
-            [jepsen.os.debian :as debian]))
+             [os :as os]
+             [tests :as tests]
+             [util :refer [timeout]]]
+            [knossos.model :as model]))
 
 (defn da-setup-schema []
   (let [uri "datomic:sql://tester?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic"
@@ -149,8 +148,9 @@
          :os os
          :db (db version)
          :client (client nil)
-         :generator (->> (gen/mix [r w])
+         :generator (->> (gen/mix [r w cas])
                          (gen/stagger 1)
                          (gen/clients)
                          (gen/time-limit 15))
+         :model (model/cas-register 0)
          :checker checker/linearizable))
