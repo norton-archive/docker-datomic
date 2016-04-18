@@ -7,6 +7,7 @@ RUN apt-get update -q \
             -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
             apt-utils \
             curl \
+            gnuplot \
             openssh-client \
             openssh-server \
             postgresql-client

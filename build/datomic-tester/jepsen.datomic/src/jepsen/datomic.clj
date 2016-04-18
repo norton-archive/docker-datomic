@@ -151,6 +151,8 @@
          :generator (->> (gen/mix [r w cas])
                          (gen/stagger 1)
                          (gen/clients)
-                         (gen/time-limit 15))
+                         (gen/time-limit 60))
          :model (model/cas-register 0)
-         :checker checker/linearizable))
+         :checker (checker/compose
+                   {:perf (checker/perf)
+                    :linear checker/linearizable})))
