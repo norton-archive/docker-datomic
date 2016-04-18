@@ -2,6 +2,7 @@ FROM java:openjdk-8-jre
 
 # Install Packages
 ENV DEBIAN_FRONTEND noninteractive
+RUN rm /etc/apt/apt.conf.d/docker-clean
 RUN apt-get update -q \
  && apt-get install -q -y \
             -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
@@ -10,9 +11,24 @@ RUN apt-get update -q \
             gnuplot \
             openssh-client \
             openssh-server \
-            postgresql-client
+            postgresql-client \
+            sudo \
+            wget \
+            sysvinit-core \
+            sysvinit \
+            sysvinit-utils \
+            curl \
+            vim \
+            man-db \
+            faketime \
+            unzip \
+            iptables \
+            iputils-ping \
+            rsyslog \
+            logrotate
 RUN apt-get clean \
  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN apt-get update -q
 
 # Setup ssh
 RUN echo 'root:root' | chpasswd

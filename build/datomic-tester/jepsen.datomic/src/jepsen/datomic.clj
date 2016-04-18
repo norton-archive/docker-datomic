@@ -8,9 +8,9 @@
              [client :as client]
              [control :as c]
              [generator :as gen]
-             [os :as os]
              [tests :as tests]
              [util :refer [timeout]]]
+            [jepsen.os.debian :as debian]
             [knossos.model :as model]))
 
 (defn da-setup-schema []
@@ -129,23 +129,11 @@
               (Thread/sleep 500)
               true))))))
 
-(def os
-  (reify os/OS
-    (setup! [_ test node]
-      (info node "os setup")
-      ;; TODO
-      ;;(debian/setup-hostfile!)
-      ;;(meh (net/heal)))
-      )
-
-    (teardown! [_ test node]
-      (info node "os teardown"))))
-
 (defn da-test
   [version]
   (assoc tests/noop-test
          :nodes ["n1" "n2"] ; TODO n1-n3
-         :os os
+         :os debian/os
          :db (db version)
          :client (client nil)
          :generator (->> (gen/mix [r w cas])
