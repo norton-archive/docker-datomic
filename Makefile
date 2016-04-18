@@ -11,6 +11,8 @@ start: build var/tester-data
 	docker-compose up -d
 
 test:
+	# restart peers due to basic Datomic Pro license limitations
+	docker-compose restart n1 n2
 	docker-compose run tester lein test
 
 stop:

@@ -9,7 +9,7 @@ services:
       - tester-data
     links:
       - n1
-      #- n2
+      - n2
       #- n3
       - n4
       #- n5
@@ -34,17 +34,17 @@ services:
       - "22"
       - "8001"
 
-  # n2:
-  #   image: datomic_tester
-  #   depends_on:
-  #     - datomic-tester
-  #   links:
-  #     - n7:postgres
-  #   entrypoint: /usr/src/app/scripts/wait-for-init-peer.sh
-  #   restart: unless-stopped
-  #   ports:
-  #     - "22"
-  #     - "8001"
+  n2:
+    image: datomic_tester
+    depends_on:
+      - datomic-tester
+    links:
+      - n7:postgres
+    entrypoint: /usr/src/app/scripts/wait-for-init-peer.sh
+    restart: unless-stopped
+    ports:
+      - "22"
+      - "8001"
 
   # n3:
   #   image: datomic_tester
