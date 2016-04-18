@@ -9,6 +9,10 @@ $ make
 $ make test
 ```
 
+Results are written to the './var/tester-data' directory.
+
+The 'test' target can be executed multiple times.
+
 See [Makefile](./Makefile) for details.
 
 ## Prerequisites
@@ -51,8 +55,6 @@ $ eval "$(docker-machine env dev)"
 
 ## ToDo
 - Add checksums for curl downloads.
-- Figure out persistent storage for test logs (i.e. Test results are stored under the var/tester-data directory.) in 'docker-compose.yml7.
-- Implement performance checker to jepsen.datomic test.
 - Implement a "chaos monkey" approach for killing peer containers to jepsen.datomic test.
 - Implement a "chaos monkey" approach for creating and healing network partitions on peer containers to jepsen.datomic test.
 - Add transactors (with embedded peers) to jepsen.datomic test.

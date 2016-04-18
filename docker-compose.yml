@@ -20,7 +20,7 @@ services:
     image: datomic_tester
     entrypoint: tail -f /dev/null
     volumes:
-      - /usr/src/app/store
+      - ./var/tester-data:/usr/src/app/store
 
   n1:
     image: datomic_tester
