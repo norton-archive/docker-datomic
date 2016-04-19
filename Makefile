@@ -10,13 +10,8 @@ build: build/datomic-base/datomic-pro-$(DATOMIC_VERSION).zip build/datomic-base/
 start: build var/tester-data
 	docker-compose up -d
 
-test: # restart peers due to basic Datomic Pro license limitations
-	docker-compose restart n1 n2
-	docker-compose run tester lein test :only jepsen.datomic-test/da-partition
-	docker-compose restart n1 n2
-	docker-compose run tester lein test :only jepsen.datomic-test/da-pause
-	docker-compose restart n1 n2
-	docker-compose run tester lein test :only jepsen.datomic-test/da-crash
+test:
+	docker-compose run tester lein test
 
 stop:
 	docker-compose stop

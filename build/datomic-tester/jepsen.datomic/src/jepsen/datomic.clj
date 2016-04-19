@@ -133,6 +133,8 @@
   (reify db/DB
     (setup! [_ test node]
       (info node "db setup" version)
+      (c/su (c/exec :killall :-9 :java))
+      (wait-for-node node 20 :green)
       (info node "id is" (da-node-id test node)))
 
     (teardown! [_ test node]
@@ -165,12 +167,10 @@
   ([targeter process]
    (nemesis/node-start-stopper targeter
                                (fn start [t n]
-                                 (try
-                                   (c/su (c/exec :killall :-9 process))
-                                   (catch RuntimeException e true))
+                                 (c/su (c/exec :killall :-9 process))
                                  [:killed n])
                                (fn stop [t n]
-                                 (wait-for-node n 15 :green)
+                                 (wait-for-node n 20 :green)
                                  [:restarted n]))))
 
 (defn da-test
