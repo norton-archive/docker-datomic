@@ -19,3 +19,9 @@
 
 (deftest da-partition
   (run-test! (da-partition-test datomic-version)))
+
+(deftest da-pause
+  (run-test! (da-pause-test datomic-version)))
+
+(deftest da-crash
+  (run-test! (da-crash-test datomic-version)))

@@ -63,6 +63,21 @@
         res (http/post url req)]
     res))
 
+(defn wait-for-node
+  [node timeout-secs color]
+  (timeout (* 1000 timeout-secs)
+           (throw (RuntimeException.
+                   (str "Timed out after "
+                        timeout-secs
+                        " s waiting for peer recovery of "
+                        node)))
+           (loop []
+             (when
+                 (try
+                   (not= 200 (:status (da-r node)))
+                   (catch RuntimeException e true))
+               (recur)))))
+
 (defn r   [_ _] {:type :invoke, :f :read, :value nil})
 (defn w   [_ _] {:type :invoke, :f :write, :value (rand-int 5)})
 (defn cas [_ _] {:type :invoke, :f :cas, :value [(rand-int 5) (rand-int 5)]})
@@ -130,6 +145,34 @@
               (Thread/sleep 500)
               true))))))
 
+(defn nemesis-pause
+  ([process] (nemesis-pause rand-nth process))
+  ([targeter process]
+   (nemesis/node-start-stopper targeter
+                               (fn start [t n]
+                                 (c/su (c/exec :killall :-s "STOP" process))
+                                 (info n "paused")
+                                 [:paused process])
+                               (fn stop [t n]
+                                 (c/su (c/exec :killall :-s "CONT" process))
+                                 (info n "resumed")
+                                 [:resumed process]))))
+
+(defn nemesis-crash
+  ([process] (nemesis-crash rand-nth process))
+  ([targeter process]
+   (nemesis/node-start-stopper targeter
+                               (fn start [t n]
+                                 (try
+                                   (c/su (c/exec :killall :-9 process))
+                                   (catch RuntimeException e true))
+                                 (info n "killed")
+                                 [:killed n])
+                               (fn stop [t n]
+                                 (wait-for-node n 60 :green)
+                                 (info n "restarted")
+                                 [:restarted n]))))
+
 (defn da-test
   "Defaults for testing datomic."
   [version name opts]
@@ -158,3 +201,13 @@
   "Testing with network partitions."
   [version]
   (da-test version "partition" {:nemesis (nemesis/partition-random-halves)}))
+
+(defn da-pause-test
+  "Testing with node pauses."
+  [version]
+  (da-test version "pause" {:nemesis (nemesis-pause :java)}))
+
+(defn da-crash-test
+  "Testing with node crashes."
+  [version]
+  (da-test version "crash" {:nemesis (nemesis-crash :java)}))
