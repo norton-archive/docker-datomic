@@ -8,6 +8,7 @@
              [client :as client]
              [control :as c]
              [generator :as gen]
+             [nemesis :as nemesis]
              [tests :as tests]
              [util :refer [timeout]]]
             [jepsen.os.debian :as debian]
@@ -136,9 +137,14 @@
          :os debian/os
          :db (db version)
          :client (client nil)
+         :nemesis (nemesis/partition-random-halves)
          :generator (->> (gen/mix [r w cas])
                          (gen/stagger 1)
-                         (gen/clients)
+                         (gen/nemesis
+                          (gen/seq (cycle [(gen/sleep 5)
+                                           {:type :info, :f :start}
+                                           (gen/sleep 5)
+                                           {:type :info, :f :stop}])))
                          (gen/time-limit 60))
          :model (model/cas-register 0)
          :checker (checker/compose

@@ -56,7 +56,6 @@ $ eval "$(docker-machine env dev)"
 ## ToDo
 - Add checksums for curl downloads.
 - Implement a "chaos monkey" approach for killing peer containers to jepsen.datomic test.
-- Implement a "chaos monkey" approach for creating and healing network partitions on peer containers to jepsen.datomic test.
 - Add transactors (with embedded peers) to jepsen.datomic test.
 - Add console (with embedded peer) to jepsen.datomic test.
 - Add postgres (with embedded peer) to jepsen.datomic test.

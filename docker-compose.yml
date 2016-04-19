@@ -30,6 +30,8 @@ services:
       - n7:postgres
     entrypoint: /usr/src/app/scripts/wait-for-init-peer.sh
     restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
     ports:
       - "22"
       - "8001"
@@ -42,6 +44,8 @@ services:
       - n7:postgres
     entrypoint: /usr/src/app/scripts/wait-for-init-peer.sh
     restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
     ports:
       - "22"
       - "8001"
