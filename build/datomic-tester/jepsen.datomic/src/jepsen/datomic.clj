@@ -12,7 +12,8 @@
              [tests :as tests]
              [util :refer [timeout]]]
             [jepsen.os.debian :as debian]
-            [knossos.model :as model]))
+            [knossos.model :as model])
+  (:import (java.net ConnectException)))
 
 (defn da-setup-schema []
   (let [uri "datomic:sql://tester?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic"
@@ -39,9 +40,10 @@
   (let [url (str "http://" (name node) ":8001/data/postgres/tester/-/entity?e=1")
         req {:headers {"Accept" "application/edn"}
              :as :clojure
-             :throw-exceptions false}
-        res (http/get url req)]
-    res))
+             :throw-exceptions false}]
+    (try
+      (http/get url req)
+      (catch ConnectException e {:status 503}))))
 
 (defn da-w! [node value]
   (let [url (str "http://" (name node) ":8001/data/postgres/tester/")
@@ -49,9 +51,10 @@
              :content-type :application/edn
              :body (prn-str {:tx-data [[:db/add 1 :tester/register value]]})
              :as :clojure
-             :throw-exceptions false}
-        res (http/post url req)]
-    res))
+             :throw-exceptions false}]
+    (try
+      (http/post url req)
+      (catch ConnectException e {:status 503}))))
 
 (defn da-cas! [node value new-value]
   (let [url (str "http://" (name node) ":8001/data/postgres/tester/")
@@ -59,9 +62,10 @@
              :content-type :application/edn
              :body (prn-str {:tx-data [[:db.fn/cas 1 :tester/register value new-value]]})
              :as :clojure
-             :throw-exceptions false}
-        res (http/post url req)]
-    res))
+             :throw-exceptions false}]
+    (try
+      (http/post url req)
+      (catch ConnectException e {:status 503}))))
 
 (defn wait-for-node
   [node timeout-secs color]
@@ -74,7 +78,7 @@
            (loop []
              (when
                  (try
-                   (not= 200 (:status (da-r node)))
+                   (not= 503 (:status (da-r node)))
                    (catch RuntimeException e true))
                (recur)))))
 
@@ -151,11 +155,9 @@
    (nemesis/node-start-stopper targeter
                                (fn start [t n]
                                  (c/su (c/exec :killall :-s "STOP" process))
-                                 (info n "paused")
                                  [:paused process])
                                (fn stop [t n]
                                  (c/su (c/exec :killall :-s "CONT" process))
-                                 (info n "resumed")
                                  [:resumed process]))))
 
 (defn nemesis-crash
@@ -166,11 +168,9 @@
                                  (try
                                    (c/su (c/exec :killall :-9 process))
                                    (catch RuntimeException e true))
-                                 (info n "killed")
                                  [:killed n])
                                (fn stop [t n]
-                                 (wait-for-node n 60 :green)
-                                 (info n "restarted")
+                                 (wait-for-node n 15 :green)
                                  [:restarted n]))))
 
 (defn da-test

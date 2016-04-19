@@ -9,5 +9,8 @@ $dirname/wait-for-init-base.sh
 >&2 echo "Executing console daemon"
 $dirname/daemon-console.sh &
 
->&2 echo "Executing peer"
-/opt/datomic-pro/bin/rest -p 8001 postgres 'datomic:sql://?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic'
+>&2 echo "Executing peer daemon"
+$dirname/daemon-peer.sh &
+
+>&2 echo "Executing noop"
+tail -f /dev/null
