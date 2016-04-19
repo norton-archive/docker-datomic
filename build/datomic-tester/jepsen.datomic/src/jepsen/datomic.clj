@@ -131,22 +131,30 @@
               true))))))
 
 (defn da-test
+  "Defaults for testing datomic."
+  [version name opts]
+  (merge tests/noop-test
+         {:name (str "datomic-" name)
+          :nodes ["n1" "n2"] ; TODO n1-n3
+          :os debian/os
+          :db (db version)
+          :client (client nil)
+          :generator (->> (gen/mix [r w cas])
+                          (gen/stagger 1/10)
+                          (gen/delay 1)
+                          (gen/nemesis
+                           (gen/seq (cycle [(gen/sleep 5)
+                                            {:type :info, :f :start}
+                                            (gen/sleep 5)
+                                            {:type :info, :f :stop}])))
+                          (gen/time-limit 60))
+          :model (model/cas-register 0)
+          :checker (checker/compose
+                    {:perf (checker/perf)
+                     :linear checker/linearizable})}
+         opts))
+
+(defn da-partition-test
+  "Testing with network partitions."
   [version]
-  (assoc tests/noop-test
-         :nodes ["n1" "n2"] ; TODO n1-n3
-         :os debian/os
-         :db (db version)
-         :client (client nil)
-         :nemesis (nemesis/partition-random-halves)
-         :generator (->> (gen/mix [r w cas])
-                         (gen/stagger 1)
-                         (gen/nemesis
-                          (gen/seq (cycle [(gen/sleep 5)
-                                           {:type :info, :f :start}
-                                           (gen/sleep 5)
-                                           {:type :info, :f :stop}])))
-                         (gen/time-limit 60))
-         :model (model/cas-register 0)
-         :checker (checker/compose
-                   {:perf (checker/perf)
-                    :linear checker/linearizable})))
+  (da-test version "partition" {:nemesis (nemesis/partition-random-halves)}))
