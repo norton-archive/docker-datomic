@@ -25,3 +25,6 @@
 
 (deftest da-crash
   (run-test! (da-crash-test datomic-version)))
+
+(deftest da-mix
+  (run-test! (da-mix-test datomic-version)))

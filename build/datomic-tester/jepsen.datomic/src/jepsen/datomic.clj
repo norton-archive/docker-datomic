@@ -211,3 +211,22 @@
   "Testing with node crashes."
   [version]
   (da-test version "crash" {:nemesis (nemesis-crash :java)}))
+
+(defn da-mix-test
+  "Testing with network partitions, node crashes, and node crashes."
+  [version]
+  (da-test version "mix"
+           {:nemesis (nemesis/compose
+                      {{:partition-start :start
+                        :partition-stop :stop} (nemesis/partition-random-halves)
+                       ;; TODO add more nemeses
+                       })
+            :generator (->> (gen/mix [r w cas])
+                            (gen/stagger 1/10)
+                            (gen/delay 1)
+                            (gen/nemesis
+                             (gen/seq (cycle [(gen/sleep 5)
+                                              {:type :info, :f :partition-start}
+                                              (gen/sleep 5)
+                                              {:type :info, :f :partition-stop}])))
+                            (gen/time-limit 60))}))

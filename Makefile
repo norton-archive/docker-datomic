@@ -1,4 +1,4 @@
-.PHONY: all build start test stop m2-cache clean realclean
+.PHONY: all build start test test-all stop m2-cache clean realclean
 
 DATOMIC_VERSION = 0.9.5350
 
@@ -11,6 +11,9 @@ start: build var/tester-data
 	docker-compose up -d
 
 test:
+	docker-compose run tester lein test :only jepsen.datomic-test/da-mix
+
+test-all:
 	docker-compose run tester lein test
 
 stop:
