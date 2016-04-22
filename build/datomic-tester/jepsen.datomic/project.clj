@@ -13,4 +13,4 @@
                  [org.postgresql/postgresql "9.4.1208"]
                  [org.apache.httpcomponents/httpclient "4.5.2"]
                  [clj-http "3.0.1"]
-                 [jepsen "0.1.0"]])
+                 [jepsen "0.1.1-SNAPSHOT"]])

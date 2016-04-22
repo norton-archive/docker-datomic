@@ -11,6 +11,7 @@ start: build var/tester-data
 	docker-compose up -d
 
 test:
+	docker-compose run tester lein test :only jepsen.datomic-test/da-noop
 	docker-compose run tester lein test :only jepsen.datomic-test/da-mix
 
 test-all:

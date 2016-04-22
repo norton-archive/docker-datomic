@@ -1,10 +1,7 @@
 (ns jepsen.datomic-test
   (:require [clojure.test :refer :all]
-            [clojure.pprint :refer [pprint]]
-            [jepsen.datomic :refer :all]
-            [jepsen
-             [core :as jepsen]
-             [report :as report]]))
+            [jepsen.datomic :as da]
+            [jepsen.core :as jepsen]))
 
 (def datomic-version
   (or (System/getenv "DATOMIC_VERSION")
@@ -17,14 +14,17 @@
     (or (is (:valid? (:results test)))
         (println (:error (:results test))))))
 
+(deftest da-noop
+  (run-test! (da/da-noop-test datomic-version)))
+
 (deftest da-partition
-  (run-test! (da-partition-test datomic-version)))
+  (run-test! (da/da-partition-test datomic-version)))
 
 (deftest da-pause
-  (run-test! (da-pause-test datomic-version)))
+  (run-test! (da/da-pause-test datomic-version)))
 
 (deftest da-crash
-  (run-test! (da-crash-test datomic-version)))
+  (run-test! (da/da-crash-test datomic-version)))
 
 (deftest da-mix
-  (run-test! (da-mix-test datomic-version)))
+  (run-test! (da/da-mix-test datomic-version)))

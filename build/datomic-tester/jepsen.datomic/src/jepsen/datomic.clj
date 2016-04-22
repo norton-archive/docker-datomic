@@ -1,5 +1,6 @@
 (ns jepsen.datomic
   (:require [clojure.tools.logging :refer :all]
+            [clojure.pprint :as pprint]
             [datomic.api :only [q db] :as d]
             [clj-http.client :as http]
             [jepsen
@@ -11,9 +12,11 @@
              [nemesis :as nemesis]
              [tests :as tests]
              [util :refer [timeout]]]
+            [jepsen.checker.timeline :as timeline]
             [jepsen.os.debian :as debian]
             [knossos.model :as model])
-  (:import (java.net ConnectException)))
+  (:import (java.net ConnectException))
+  (:import (org.apache.http NoHttpResponseException)))
 
 (defn da-setup-schema []
   (let [uri "datomic:sql://tester?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic"
@@ -36,25 +39,33 @@
       (finally ; release connection
         (d/release conn)))))
 
-(defn da-r [node]
+(defn da-read [node]
   (let [url (str "http://" (name node) ":8001/data/postgres/tester/-/entity?e=1")
         req {:headers {"Accept" "application/edn"}
              :as :clojure
+             ;; DEBUG :save-request? true :debug-body true
              :throw-exceptions false}]
     (try
-      (http/get url req)
-      (catch ConnectException e {:status 503}))))
+      (let [res (http/get url req)]
+        ;; DEBUG (pprint/pprint [url req res])
+        res)
+      (catch ConnectException e {:status :ConnectException})
+      (catch NoHttpResponseException e {:status :NoHttpResponseException}))))
 
-(defn da-w! [node value]
+(defn da-write! [node value]
   (let [url (str "http://" (name node) ":8001/data/postgres/tester/")
         req {:headers {"Accept" "application/edn"}
              :content-type :application/edn
              :body (prn-str {:tx-data [[:db/add 1 :tester/register value]]})
              :as :clojure
+             ;; DEBUG :save-request? true :debug-body true
              :throw-exceptions false}]
     (try
-      (http/post url req)
-      (catch ConnectException e {:status 503}))))
+      (let [res (http/post url req)]
+        ;; DEBUG (pprint/pprint [url req res])
+        res)
+      (catch ConnectException e {:status :ConnectException})
+      (catch NoHttpResponseException e {:status :NoHttpResponseException}))))
 
 (defn da-cas! [node value new-value]
   (let [url (str "http://" (name node) ":8001/data/postgres/tester/")
@@ -62,29 +73,36 @@
              :content-type :application/edn
              :body (prn-str {:tx-data [[:db.fn/cas 1 :tester/register value new-value]]})
              :as :clojure
+             ;; DEBUG :save-request? true :debug-body true
              :throw-exceptions false}]
     (try
-      (http/post url req)
-      (catch ConnectException e {:status 503}))))
+      (let [res (http/post url req)]
+        ;; DEBUG (pprint/pprint [url req res])
+        res)
+      (catch ConnectException e {:status :ConnectException})
+      (catch NoHttpResponseException e {:status :NoHttpResponseException}))))
+
+(defn member? [elt col] (some #(= elt %) col))
 
 (defn wait-for-node
-  [node timeout-secs color]
+  [node timeout-secs & expected-statuses]
   (timeout (* 1000 timeout-secs)
            (throw (RuntimeException.
                    (str "Timed out after "
                         timeout-secs
                         " s waiting for peer recovery of "
                         node)))
-           (loop []
-             (when
-                 (try
-                   (not= 503 (:status (da-r node)))
-                   (catch RuntimeException e true))
-               (recur)))))
-
-(defn r   [_ _] {:type :invoke, :f :read, :value nil})
-(defn w   [_ _] {:type :invoke, :f :write, :value (rand-int 5)})
-(defn cas [_ _] {:type :invoke, :f :cas, :value [(rand-int 5) (rand-int 5)]})
+           (do
+             (loop []
+               (when
+                   (try
+                     (let [status (:status (da-read node))
+                           test (not (member? status expected-statuses))]
+                       (if test
+                         (Thread/sleep 100))
+                       test)
+                     (catch RuntimeException e true))
+                 (recur))))))
 
 (defn client
   "A client for a single compare-and-set register"
@@ -96,25 +114,28 @@
     (invoke! [this test op]
       (timeout 15000 (assoc op :type :info, :error :timeout)
                (case (:f op)
-                 :read (let [res (da-r conn)]
-                         (if (= 200 (:status res))
+                 :read (let [res (da-read conn)
+                             status (:status res)]
+                         (if (= 200 status)
                            (assoc op :type :ok :value (:tester/register (:body res)))
-                           (assoc op :type :fail)))
+                           (assoc op :type :fail :value res)))
 
-                 :write (let [res (da-w! conn (:value op))]
-                          (if (= 201 (:status res))
+                 :write (let [res (da-write! conn (:value op))
+                              status (:status res)]
+                          (if (= 201 status)
                             (assoc op :type :ok)
-                            (assoc op :type :fail)))
+                            (assoc op :type :fail :value res)))
 
                  :cas (let [[value new-value] (:value op)
-                            res (da-cas! conn value new-value)]
-                        (if (= 201 (:status res))
+                            res (da-cas! conn value new-value)
+                            status (:status res)]
+                        (if (= 201 status)
                           (assoc op :type :ok)
-                          (assoc op :type :fail))))))
+                          (assoc op :type :fail :value res))))))
 
     (teardown! [_ test])))
 
-(defn da-node-ids
+(defn node-ids
   "Returns a map of node names to node ids."
   [test]
   (->> test
@@ -122,10 +143,10 @@
        (map-indexed (fn [i node] [node i]))
        (into {})))
 
-(defn da-node-id
+(defn node-id
   "Given a test and a node name from that test, returns the ID for that node."
   [test node]
-  ((da-node-ids test) node))
+  ((node-ids test) node))
 
 (defn db
   "Datomic DB for a particular version."
@@ -134,8 +155,9 @@
     (setup! [_ test node]
       (info node "db setup" version)
       (c/su (c/exec :killall :-9 :java))
-      (wait-for-node node 20 :green)
-      (info node "id is" (da-node-id test node)))
+      (Thread/sleep 1000)
+      (wait-for-node node 60 200 404)
+      (info node "id is" (node-id test node)))
 
     (teardown! [_ test node]
       (info node "db teardown"))
@@ -170,63 +192,96 @@
                                  (c/su (c/exec :killall :-9 process))
                                  [:killed n])
                                (fn stop [t n]
-                                 (wait-for-node n 20 :green)
+                                 (wait-for-node n 30 200)
                                  [:restarted n]))))
 
-(defn da-test
+(defn gen-sleep
+  ([]
+   (gen-sleep 5))
+  ([n]
+   (gen/sleep n))
+  ([min max]
+   {:pre (> max min)}
+   (let [n (rand-int (- max min))
+         m (+ min n)]
+     (gen/sleep m))))
+
+(defn da-create-test
   "Defaults for testing datomic."
   [version name opts]
   (merge tests/noop-test
          {:name (str "datomic-" name)
-          :nodes ["n1" "n2"] ; TODO n1-n3
+          :nodes ["n1"] ; TODO n1-n3
           :os debian/os
           :db (db version)
           :client (client nil)
-          :generator (->> (gen/mix [r w cas])
-                          (gen/stagger 1/10)
-                          (gen/delay 1)
-                          (gen/nemesis
-                           (gen/seq (cycle [(gen/sleep 5)
-                                            {:type :info, :f :start}
-                                            (gen/sleep 5)
-                                            {:type :info, :f :stop}])))
-                          (gen/time-limit 60))
           :model (model/cas-register 0)
           :checker (checker/compose
-                    {:perf (checker/perf)
-                     :linear checker/linearizable})}
+                    {:linear checker/linearizable
+                     :perf (checker/perf)
+                     :timeline timeline/html})}
          opts))
+
+(defn da-noop-test
+  "Testing with noop nemesis."
+  [version]
+  (da-create-test version "noop" {:generator (->> gen/cas
+                                                  (gen/stagger 1/10)
+                                                  (gen/clients)
+                                                  (gen/time-limit 60))}))
+
+(defn da-create-test-nemesis
+  [version name nemesis]
+  (da-create-test version name {:nemesis nemesis
+                                :generator (->> gen/cas
+                                                (gen/stagger 1/10)
+                                                (gen/nemesis (gen/seq (cycle [(gen-sleep 5)
+                                                                              {:type :info, :f :start}
+                                                                              (gen-sleep 1 5)
+                                                                              {:type :info, :f :stop}])))
+                                                (gen/time-limit 60))}))
 
 (defn da-partition-test
   "Testing with network partitions."
   [version]
-  (da-test version "partition" {:nemesis (nemesis/partition-random-halves)}))
+  (da-create-test-nemesis version "partition" (nemesis/partition-random-halves)))
 
 (defn da-pause-test
   "Testing with node pauses."
   [version]
-  (da-test version "pause" {:nemesis (nemesis-pause :java)}))
+  (da-create-test-nemesis version "pause" (nemesis-pause)))
 
 (defn da-crash-test
   "Testing with node crashes."
   [version]
-  (da-test version "crash" {:nemesis (nemesis-crash :java)}))
+  (da-create-test-nemesis version "crash" (nemesis-crash)))
 
 (defn da-mix-test
-  "Testing with network partitions, node crashes, and node crashes."
+  "Testing with network partitions, node pauses, and node crashes."
   [version]
-  (da-test version "mix"
-           {:nemesis (nemesis/compose
-                      {{:partition-start :start
-                        :partition-stop :stop} (nemesis/partition-random-halves)
-                       ;; TODO add more nemeses
-                       })
-            :generator (->> (gen/mix [r w cas])
-                            (gen/stagger 1/10)
-                            (gen/delay 1)
-                            (gen/nemesis
-                             (gen/seq (cycle [(gen/sleep 5)
-                                              {:type :info, :f :partition-start}
-                                              (gen/sleep 5)
-                                              {:type :info, :f :partition-stop}])))
-                            (gen/time-limit 60))}))
+  (da-create-test version "mix"
+                  {:nemesis (nemesis/compose
+                             {{:partition-start :start
+                               :partition-stop :stop} (nemesis/partition-random-halves)
+                              {:pause-start :start
+                               :pause-stop :stop} (nemesis-pause :java)
+                              {:crash-start :start
+                               :crash-stop :stop} (nemesis-crash :java)
+                              })
+                   :generator (->> gen/cas
+                                   (gen/stagger 1/10)
+                                   (gen/nemesis
+                                    (->> (gen/mix [(gen/seq [(gen-sleep 5)
+                                                             {:type :info, :f :partition-start}
+                                                             (gen-sleep 1 5)
+                                                             {:type :info, :f :partition-stop}])
+                                                   (gen/seq [(gen-sleep 5)
+                                                             {:type :info, :f :pause-start}
+                                                             (gen-sleep 1 5)
+                                                             {:type :info, :f :pause-stop}])
+                                                   (gen/seq [(gen-sleep 5)
+                                                             {:type :info, :f :crash-start}
+                                                             (gen-sleep 1 5)
+                                                             {:type :info, :f :crash-stop}])])
+                                         (gen/time-limit 61)))
+                                   (gen/time-limit 60))}))

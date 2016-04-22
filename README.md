@@ -53,10 +53,14 @@ NOTE: This test probably needs at least 4-5 GB of physical memory and at least 2
 $ eval "$(docker-machine env dev)"
 ```
 
+## Bugs
+- Check fails for crash nemesis at test end.
+- Implementation for the pause nemesis appears not to be working as expected.
+
 ## ToDo
-- Add checksums for curl downloads.
-- Figure out how to randomly intermix partition, pause, and crash nemeses.
+- Enable multiple peers.
 - Add transactors (with embedded peers) to jepsen.datomic test.
 - Add console (with embedded peer) to jepsen.datomic test.
 - Add postgres (with embedded peer) to jepsen.datomic test.
+- Add checksums for curl downloads.
 - BONUS ... implement a postgres "active" and "standby" node to jepsen.datomic test.
