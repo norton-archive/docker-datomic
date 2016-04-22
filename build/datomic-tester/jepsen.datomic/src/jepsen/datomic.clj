@@ -19,7 +19,33 @@
            java.net.SocketException
            org.apache.http.NoHttpResponseException))
 
-(defn da-setup-schema []
+(defn node-ids
+  "Returns a map of node names to node ids."
+  [test]
+  (->> test
+       :nodes
+       (map-indexed (fn [i node] [node i]))
+       (into {})))
+
+(defn node-id
+  "Given a test and a node name from that test, returns the ID for that node."
+  [test node]
+  ((node-ids test) node))
+
+(defn first-node
+  [test]
+  (first (:nodes test)))
+
+(defn first-node-id
+  [test]
+  (node-id test (first-node test)))
+
+(defn test-entity
+  [test]
+  1)
+
+(defn da-setup-schema
+  [test node]
   (let [uri "datomic:sql://tester?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic"
         schema-tx [{:db/id #db/id[:db.part/db]
                     :db/ident :tester/register
@@ -35,13 +61,15 @@
         ;; initialize schema
         @(d/transact conn schema-tx)
         ;; initialize register
-        @(d/transact conn [[:db/add 1 :tester/register 0]])
+        @(d/transact conn [[:db/add (test-entity test) :tester/register 0]])
         true)
       (finally ; release connection
-        (d/release conn)))))
+        (d/release conn)
+        (d/shutdown false)))))
 
-(defn da-read [node]
-  (let [url (str "http://" (name node) ":8001/data/postgres/tester/-/entity?e=1")
+(defn da-read
+  [test node]
+  (let [url (str "http://" (name node) ":8001/data/postgres/tester/-/entity?e=" (test-entity test))
         req {:headers {"Accept" "application/edn"}
              :as :clojure
              ;; DEBUG :save-request? true :debug-body true
@@ -54,11 +82,12 @@
       (catch SocketException e {:status :SocketException})
       (catch NoHttpResponseException e {:status :NoHttpResponseException}))))
 
-(defn da-write! [node value]
+(defn da-write!
+  [test node value]
   (let [url (str "http://" (name node) ":8001/data/postgres/tester/")
         req {:headers {"Accept" "application/edn"}
              :content-type :application/edn
-             :body (prn-str {:tx-data [[:db/add 1 :tester/register value]]})
+             :body (prn-str {:tx-data [[:db/add (test-entity test) :tester/register value]]})
              :as :clojure
              ;; DEBUG :save-request? true :debug-body true
              :throw-exceptions false}]
@@ -70,11 +99,12 @@
       (catch SocketException e {:status :SocketException})
       (catch NoHttpResponseException e {:status :NoHttpResponseException}))))
 
-(defn da-cas! [node value new-value]
+(defn da-cas!
+  [test node value new-value]
   (let [url (str "http://" (name node) ":8001/data/postgres/tester/")
         req {:headers {"Accept" "application/edn"}
              :content-type :application/edn
-             :body (prn-str {:tx-data [[:db.fn/cas 1 :tester/register value new-value]]})
+             :body (prn-str {:tx-data [[:db.fn/cas (test-entity test) :tester/register value new-value]]})
              :as :clojure
              ;; DEBUG :save-request? true :debug-body true
              :throw-exceptions false}]
@@ -86,10 +116,12 @@
       (catch SocketException e {:status :SocketException})
       (catch NoHttpResponseException e {:status :NoHttpResponseException}))))
 
-(defn member? [elt col] (some #(= elt %) col))
+(defn member?
+  [elt col]
+  (some #(= elt %) col))
 
 (defn wait-for-node
-  [node timeout-secs & expected-statuses]
+  [test node timeout-secs & expected-statuses]
   (timeout (* 1000 timeout-secs)
            (throw (RuntimeException.
                    (str "Timed out after "
@@ -100,11 +132,11 @@
              (loop []
                (when
                    (try
-                     (let [status (:status (da-read node))
-                           test (not (member? status expected-statuses))]
-                       (if test
+                     (let [status (:status (da-read test node))
+                           member (not (member? status expected-statuses))]
+                       (if member
                          (Thread/sleep 100))
-                       test)
+                       member)
                      (catch RuntimeException e true))
                  (recur))))))
 
@@ -118,39 +150,26 @@
     (invoke! [this test op]
       (timeout 15000 (assoc op :type :info, :error :timeout)
                (case (:f op)
-                 :read (let [res (da-read conn)
+                 :read (let [res (da-read test conn)
                              status (:status res)]
                          (if (= 200 status)
                            (assoc op :type :ok :value (:tester/register (:body res)))
                            (assoc op :type :fail :value res)))
 
-                 :write (let [res (da-write! conn (:value op))
+                 :write (let [res (da-write! test conn (:value op))
                               status (:status res)]
                           (if (= 201 status)
                             (assoc op :type :ok)
                             (assoc op :type :fail :value res)))
 
                  :cas (let [[value new-value] (:value op)
-                            res (da-cas! conn value new-value)
+                            res (da-cas! test conn value new-value)
                             status (:status res)]
                         (if (= 201 status)
                           (assoc op :type :ok)
                           (assoc op :type :fail :value res))))))
 
     (teardown! [_ test])))
-
-(defn node-ids
-  "Returns a map of node names to node ids."
-  [test]
-  (->> test
-       :nodes
-       (map-indexed (fn [i node] [node i]))
-       (into {})))
-
-(defn node-id
-  "Given a test and a node name from that test, returns the ID for that node."
-  [test node]
-  ((node-ids test) node))
 
 (defn db
   "Datomic DB for a particular version."
@@ -159,8 +178,8 @@
     (setup! [_ test node]
       (info node "db setup" version)
       (c/su (c/exec :killall :-9 :java))
-      (Thread/sleep 1000)
-      (wait-for-node node 60 200 404)
+      (Thread/sleep 100)
+      (wait-for-node test node 60 200 404)
       (info node "id is" (node-id test node)))
 
     (teardown! [_ test node]
@@ -169,13 +188,8 @@
     db/Primary
     (setup-primary! [_ test node]
       (info node "db setup primary" version)
-      (while
-          (try
-            (not (da-setup-schema))
-            (catch Exception e
-              (info node "db setup primary failed - retrying: " (.getMessage e))
-              (Thread/sleep 500)
-              true))))))
+      (da-setup-schema test node)
+      (Thread/sleep 1000))))
 
 (defn nemesis-pause
   ([process] (nemesis-pause rand-nth process))
@@ -194,9 +208,10 @@
    (nemesis/node-start-stopper targeter
                                (fn start [t n]
                                  (c/su (c/exec :killall :-9 process))
+                                 (Thread/sleep 100)
                                  [:killed n])
                                (fn stop [t n]
-                                 (wait-for-node n 30 200)
+                                 (wait-for-node t n 30 200)
                                  [:restarted n]))))
 
 (defn gen-sleep
@@ -215,7 +230,7 @@
   [version name opts]
   (merge tests/noop-test
          {:name (str "datomic-" name)
-          :nodes ["n1"] ; TODO n1-n3
+          :nodes ["n1" "n2"] ; TODO n1-n3
           :os debian/os
           :db (db version)
           :client (client nil)
@@ -287,5 +302,5 @@
                                                              {:type :info, :f :crash-start}
                                                              (gen-sleep 1 5)
                                                              {:type :info, :f :crash-stop}])])
-                                         (gen/time-limit 61)))
+                                         (gen/time-limit 50)))
                                    (gen/time-limit 60))}))
