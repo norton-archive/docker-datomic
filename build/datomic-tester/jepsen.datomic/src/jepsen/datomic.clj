@@ -15,8 +15,9 @@
             [jepsen.checker.timeline :as timeline]
             [jepsen.os.debian :as debian]
             [knossos.model :as model])
-  (:import (java.net ConnectException))
-  (:import (org.apache.http NoHttpResponseException)))
+  (:import java.net.ConnectException
+           java.net.SocketException
+           org.apache.http.NoHttpResponseException))
 
 (defn da-setup-schema []
   (let [uri "datomic:sql://tester?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic"
@@ -50,6 +51,7 @@
         ;; DEBUG (pprint/pprint [url req res])
         res)
       (catch ConnectException e {:status :ConnectException})
+      (catch SocketException e {:status :SocketException})
       (catch NoHttpResponseException e {:status :NoHttpResponseException}))))
 
 (defn da-write! [node value]
@@ -65,6 +67,7 @@
         ;; DEBUG (pprint/pprint [url req res])
         res)
       (catch ConnectException e {:status :ConnectException})
+      (catch SocketException e {:status :SocketException})
       (catch NoHttpResponseException e {:status :NoHttpResponseException}))))
 
 (defn da-cas! [node value new-value]
@@ -80,6 +83,7 @@
         ;; DEBUG (pprint/pprint [url req res])
         res)
       (catch ConnectException e {:status :ConnectException})
+      (catch SocketException e {:status :SocketException})
       (catch NoHttpResponseException e {:status :NoHttpResponseException}))))
 
 (defn member? [elt col] (some #(= elt %) col))
@@ -249,12 +253,12 @@
 (defn da-pause-test
   "Testing with node pauses."
   [version]
-  (da-create-test-nemesis version "pause" (nemesis-pause)))
+  (da-create-test-nemesis version "pause" (nemesis-pause :java)))
 
 (defn da-crash-test
   "Testing with node crashes."
   [version]
-  (da-create-test-nemesis version "crash" (nemesis-crash)))
+  (da-create-test-nemesis version "crash" (nemesis-crash :java)))
 
 (defn da-mix-test
   "Testing with network partitions, node pauses, and node crashes."
