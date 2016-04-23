@@ -1,7 +1,6 @@
 (ns jepsen.datomic
   (:require [clojure.tools.logging :refer :all]
             [clojure.pprint :as pprint]
-            [datomic.api :only [q db] :as d]
             [clj-http.client :as http]
             [jepsen
              [db :as db]
@@ -43,29 +42,6 @@
 (defn test-entity
   [test]
   1)
-
-(defn da-setup-schema
-  [test node]
-  (let [uri "datomic:sql://tester?jdbc:postgresql://postgres:5432/datomic?user=datomic&password=datomic"
-        schema-tx [{:db/id #db/id[:db.part/db]
-                    :db/ident :tester/register
-                    :db/valueType :db.type/long
-                    :db/cardinality :db.cardinality/one
-                    :db/doc "A register for datomic tester"
-                    :db.install/_attribute :db.part/db}]
-        delete (d/delete-database uri)
-        create (d/create-database uri)
-        conn (d/connect uri)]
-    (try
-      (do
-        ;; initialize schema
-        @(d/transact conn schema-tx)
-        ;; initialize register
-        @(d/transact conn [[:db/add (test-entity test) :tester/register 0]])
-        true)
-      (finally ; release connection
-        (d/release conn)
-        (d/shutdown false)))))
 
 (defn da-read
   [test node]
@@ -178,8 +154,6 @@
     (setup! [_ test node]
       (info node "db setup" version)
       (c/su (c/exec :killall :-9 :java))
-      (Thread/sleep 100)
-      (wait-for-node test node 60 200 404)
       (info node "id is" (node-id test node)))
 
     (teardown! [_ test node]
@@ -188,8 +162,19 @@
     db/Primary
     (setup-primary! [_ test node]
       (info node "db setup primary" version)
-      (da-setup-schema test node)
-      (Thread/sleep 1000))))
+      (Thread/sleep 1000)
+      (pprint/pprint
+       (c/cd "/usr/src/app"
+             (c/su (c/exec :env :LEIN_ROOT=1 :lein :exec :-p "scripts/setup-schema.clj"))))
+
+      (map (fn [n]
+             (wait-for-node test n 60 200)
+             (info n "node is ready"))
+           (:nodes test))
+
+      (map (fn [n]
+             (assert (= 0 (:tester/register (:body (da-read test n))))))
+           (:nodes test)))))
 
 (defn nemesis-pause
   ([process] (nemesis-pause rand-nth process))
@@ -208,7 +193,6 @@
    (nemesis/node-start-stopper targeter
                                (fn start [t n]
                                  (c/su (c/exec :killall :-9 process))
-                                 (Thread/sleep 100)
                                  [:killed n])
                                (fn stop [t n]
                                  (wait-for-node t n 30 200)

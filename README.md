@@ -55,10 +55,12 @@ $ eval "$(docker-machine env dev)"
 
 ## Bugs
 - Implementation for the pause nemesis appears not to be working as expected.
+- Jepsen's utility for linking the latest test result might have a race condition (or need a sync call).
 
 ## ToDo
-- Add transactors (with embedded peers) to jepsen.datomic test.
-- Add console (with embedded peer) to jepsen.datomic test.
-- Add postgres (with embedded peer) to jepsen.datomic test.
+- Add transactors to jepsen.datomic test.
+- Add console to jepsen.datomic test.
+- Add postgres to jepsen.datomic test.
+- Add assertions and passing of entity to setup-schema.clj script.
 - Add checksums for curl downloads.
 - BONUS ... implement a postgres "active" and "standby" node to jepsen.datomic test.
