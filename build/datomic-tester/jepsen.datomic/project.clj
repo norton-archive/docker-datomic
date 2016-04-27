@@ -7,7 +7,7 @@
   :dependencies [[org.clojure/clojure "1.7.0"]
                  [org.clojure/tools.nrepl "0.2.12"]
                  [clojure-complete/clojure-complete "0.2.4"]
-                 [com.datomic/datomic-pro "0.9.5350"
+                 [com.datomic/datomic-pro "0.9.5359"
                   :exclusions [org.slf4j/slf4j-nop org.slf4j/log4j-over-slf4j]]
                  [org.slf4j/slf4j-log4j12 "1.7.21"]
                  [org.postgresql/postgresql "9.4.1208"]

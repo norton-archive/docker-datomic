@@ -52,7 +52,7 @@ RUN curl -s https://raw.githubusercontent.com/technomancy/leiningen/$LEIN_VERSIO
  && $LEIN_INSTALL/lein
 
 # Install Datomic
-ENV DATOMIC_VERSION 0.9.5350
+ENV DATOMIC_VERSION 0.9.5359
 ENV DATOMIC_HOME /opt/datomic-pro
 
 COPY datomic-pro-$DATOMIC_VERSION.zip /tmp/datomic.zip

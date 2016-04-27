@@ -1,6 +1,6 @@
 .PHONY: all build start test test-all stop m2-cache clean realclean
 
-DATOMIC_VERSION = 0.9.5350
+DATOMIC_VERSION = 0.9.5359
 
 all: start
 

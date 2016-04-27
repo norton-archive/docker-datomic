@@ -5,7 +5,7 @@
 
 (def datomic-version
   (or (System/getenv "DATOMIC_VERSION")
-      "0.9.5350"))
+      "0.9.5359"))
 
 (defn run-test!
   "Runs a test."
