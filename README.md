@@ -21,8 +21,7 @@ See [Makefile](./Makefile) for details.
   'username' is replaced by your registered email address and 'password' is
   replaced by your Datomic Download Key.
 - Place your Datomic license key in the file 'priv/.license-key'. The format of
-  the file is 'license-key=...' where '...' is replaced by by your Datomic
-  license key.
+  the file is '...' where '...' is replaced by by your Datomic license key.
 
 ## Resources
 - http://www.datomic.com
