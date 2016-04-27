@@ -16,8 +16,13 @@ The 'test' target can be executed multiple times.
 See [Makefile](./Makefile) for details.
 
 ## Prerequisites
-- Place your Datomic credentials for downloading the software in the file 'priv/.credentials'.
-- Place your Datomic license key in the file 'priv/.license-key'.
+- Place your Datomic credentials for downloading the software in the file
+  'priv/.credentials'. The format of the file is 'username:password' where
+  'username' is replaced by your registered email address and 'password' is
+  replaced by your Datomic Download Key.
+- Place your Datomic license key in the file 'priv/.license-key'. The format of
+  the file is 'license-key=...' where '...' is replaced by by your Datomic
+  license key.
 
 ## Resources
 - http://www.datomic.com
