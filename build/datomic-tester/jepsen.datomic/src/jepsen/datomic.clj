@@ -18,6 +18,10 @@
            java.net.SocketException
            org.apache.http.NoHttpResponseException))
 
+(defn member?
+  [elt col]
+  (some #(= elt %) col))
+
 (defn node-ids
   "Returns a map of node names to node ids."
   [test]
@@ -33,7 +37,7 @@
 
 (defn first-node
   [test]
-  (first (:nodes test)))
+  (first (:peers test)))
 
 (defn first-node-id
   [test]
@@ -92,11 +96,7 @@
       (catch SocketException e {:status :SocketException})
       (catch NoHttpResponseException e {:status :NoHttpResponseException}))))
 
-(defn member?
-  [elt col]
-  (some #(= elt %) col))
-
-(defn wait-for-node
+(defn wait-for-peer
   [test node timeout-secs & expected-statuses]
   (timeout (* 1000 timeout-secs)
            (throw (RuntimeException.
@@ -168,13 +168,13 @@
              (c/su (c/exec :env :LEIN_ROOT=1 :lein :exec :-p "scripts/setup-schema.clj"))))
 
       (map (fn [n]
-             (wait-for-node test n 60 200)
-             (info n "node is ready"))
-           (:nodes test))
+             (wait-for-peer test n 60 200)
+             (info n "peer is ready"))
+           (:peers test))
 
       (map (fn [n]
              (assert (= 0 (:tester/register (:body (da-read test n))))))
-           (:nodes test)))))
+           (:peers test)))))
 
 (defn nemesis-pause
   ([process] (nemesis-pause rand-nth process))
@@ -195,7 +195,9 @@
                                  (c/su (c/exec :killall :-9 process))
                                  [:killed n])
                                (fn stop [t n]
-                                 (wait-for-node t n 30 200)
+                                 (if (member? n (:peers t))
+                                   (wait-for-peer t n 30 process)
+                                   false)
                                  [:restarted n]))))
 
 (defn gen-sleep
@@ -214,7 +216,9 @@
   [version name opts]
   (merge tests/noop-test
          {:name (str "datomic-" name)
-          :nodes ["n1" "n2"] ; TODO n1-n3
+          :peers ["n1" "n2"]
+          :concurrency 2 ; NOTE: limit clients to only peers
+          :nodes ["n1" "n2" "n4" "n5"] ; TODO: add n7
           :os debian/os
           :db (db version)
           :client (client nil)

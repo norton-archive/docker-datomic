@@ -70,6 +70,8 @@ services:
       - n7:postgres
     entrypoint: /usr/src/app/scripts/wait-for-init-transactor.sh n4
     restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
     ports:
       - "22"
       - "4334"
@@ -83,6 +85,8 @@ services:
       - n7:postgres
     entrypoint: /usr/src/app/scripts/wait-for-init-transactor.sh n5
     restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
     ports:
       - "22"
       - "4334"
@@ -96,6 +100,8 @@ services:
   #     - n7:postgres
   #   entrypoint: /usr/src/app/scripts/wait-for-init-console.sh
   #   restart: unless-stopped
+  #   cap_add:
+  #     - NET_ADMIN
   #   ports:
   #     - "22"
   #     - "8001"

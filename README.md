@@ -58,11 +58,13 @@ $ eval "$(docker-machine env dev)"
 ```
 
 ## Bugs
+- Until Jepsen version 0.1.1 is released, one must download and locally install
+  Jepsen into your own private '.m2/repository' before executing the 'm2-cache'
+  make target.
 - Implementation for the pause nemesis appears not to be working as expected.
-- Jepsen's utility for linking the latest test result might have a race condition (or need a sync call).
+  Needs further investigation.
 
 ## ToDo
-- Add transactors to jepsen.datomic test.
 - Add console to jepsen.datomic test.
 - Add postgres to jepsen.datomic test.
 - Add assertions and passing of entity to setup-schema.clj script.
