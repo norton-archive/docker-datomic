@@ -33,6 +33,7 @@ realclean: clean
 	@docker rm -v $(shell docker ps -a -q -f status=exited) 2>/dev/null || true
 	@docker rmi $(shell docker images -q) 2>/dev/null || true
 	@docker rm $(shell docker ps -a -q) 2>/dev/null || true
+	@git -C build/datomic-tester/jepsen.datomic clean -dfx
 	@rm -rf priv/datomic-pro-$(DATOMIC_VERSION) priv/datomic-pro-$(DATOMIC_VERSION).zip
 	@rm -f build/datomic-base/datomic-pro-$(DATOMIC_VERSION).zip
 	@rm -f build/datomic-base/.license-key
