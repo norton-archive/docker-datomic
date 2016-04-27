@@ -23,6 +23,7 @@ RUN apt-get update -q \
             faketime \
             unzip \
             iptables \
+            psmisc \
             iputils-ping \
             rsyslog \
             logrotate
