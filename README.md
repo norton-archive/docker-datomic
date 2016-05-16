@@ -65,6 +65,7 @@ $ eval "$(docker-machine env dev)"
   Needs further investigation.
 
 ## ToDo
+- Implement checker for jespen.datomic test.
 - Add console to jepsen.datomic test.
 - Add postgres to jepsen.datomic test.
 - Add assertions and passing of entity to setup-schema.clj script.
